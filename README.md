@@ -5,5 +5,10 @@ AviSynth plugin to convert VFR to CFR using MKV timecodes
 * Add 64-bit binary.
 * Update to AviSynth+ 3.5 library.
 
+## Documentation
+* http://www.avisynth.nl/index.php/TimecodeFPS
+* http://tasvideos.org/forum/viewtopic.php?p=313741#313741
+* https://github.com/nattthebear/avisynthjunk/issues/1
+
 ### Copyright 2012 Nicholai Main
 See timecodefps.txt for more.
