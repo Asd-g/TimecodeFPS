@@ -375,8 +375,9 @@ AVS_Value AVSC_CC tmm_create (AVS_ScriptEnvironment *env, AVS_Value args, void *
 
   char buff[1024];
 
-  if (!fgets (buff, 1024, fil) || strcmp (buff, "# timecode format v2\n"))
+  if (!fgets (buff, 1024, fil) || (strcmp (buff, "# timecode format v2\n") && strcmp(buff, "# timestamp format v2\n")))
   {
+
     fclose (fil);
 	return avs_new_value_error ("file doesn't appear to be mkvtoolnix timecodes v2");
   }
@@ -410,7 +411,10 @@ AVS_Value AVSC_CC tmm_create (AVS_ScriptEnvironment *env, AVS_Value args, void *
   {
     return avs_new_value_error ("no timecodes in file?");
   }
-  
+  else if (codes[ncodes - 1] == codes[ncodes - 2])
+  {
+	  ncodes = ncodes - 1;
+  }
   
   clip = avs_take_clip (avs_array_elt (args, 0), env);
   const AVS_VideoInfo *vi = avs_get_video_info (clip);
