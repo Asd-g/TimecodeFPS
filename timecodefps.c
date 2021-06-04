@@ -411,11 +411,8 @@ AVS_Value AVSC_CC tmm_create (AVS_ScriptEnvironment *env, AVS_Value args, void *
   {
     return avs_new_value_error ("no timecodes in file?");
   }
-  else if (codes[ncodes - 1] == codes[ncodes - 2])
-  {
-	  ncodes = ncodes - 1;
-  }
-  
+
+
   clip = avs_take_clip (avs_array_elt (args, 0), env);
   const AVS_VideoInfo *vi = avs_get_video_info (clip);
 
