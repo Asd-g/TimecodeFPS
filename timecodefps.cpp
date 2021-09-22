@@ -395,7 +395,7 @@ AVS_Value AVSC_CC tmm_create(AVS_ScriptEnvironment* env, AVS_Value args, void* u
 
 		FILE* fil = fopen(filenames[i].c_str(), "r");
 		if (!fil)
-			return avs_new_value_error("couldn't open file for reading!");
+			return avs_new_value_error("couldn't open file for reading!"); 
 
 
 		if (!fgets(buff, 1024, fil) || strcmp(buff, "# timecode format v2\n"))
