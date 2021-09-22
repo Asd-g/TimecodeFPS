@@ -34,6 +34,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <limits.h>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <string>
+#include <sstream>
+#include <vector>
 
 #include "avisynth_c.h"
 
@@ -364,7 +367,16 @@ AVS_Value AVSC_CC tmm_create(AVS_ScriptEnvironment* env, AVS_Value args, void* u
 
 
 	// Split filename if it's a semicolon separated ist
-    //std::string heyMom("Where are my socks?");
+	std::stringstream ss;
+	ss << filename;
+	std::vector<std::string> filenames;
+
+	while (ss.good())
+	{
+		std::string substr;
+		std::getline(ss, substr, ';');
+		filenames.push_back(substr);
+	}
 
 
 	if (fpsnum < 1) fpsnum = 1;
@@ -374,44 +386,48 @@ AVS_Value AVSC_CC tmm_create(AVS_ScriptEnvironment* env, AVS_Value args, void* u
 	if (threshmore < 0.02) threshmore = 0.02;
 	*/
 
-	FILE* fil = fopen(filename, "r");
-	if (!fil)
-		return avs_new_value_error("couldn't open file for reading!");
-
 	char buff[1024];
-
-	if (!fgets(buff, 1024, fil) || strcmp(buff, "# timecode format v2\n"))
-	{
-		fclose(fil);
-		return avs_new_value_error("file doesn't appear to be mkvtoolnix timecodes v2");
-	}
-
-	// read in file
 	int ncodes = 0;
 	int ncodespace = 0;
 	double* codes = NULL;
-	while (fgets(buff, 1024, fil))
-	{
-		if (ncodes == ncodespace)
-		{
-			ncodespace = ncodespace ? ncodespace * 2 : 1024;
-			codes = (double*)realloc(codes, ncodespace * sizeof(double));
-			if (!codes)
-			{
-				fclose(fil);
-				return avs_new_value_error("out of memory!");
-			}
-		}
-		if (sscanf(buff, "%lf", codes + ncodes) != 1)
-		{
-			free(codes);
-			fclose(fil);
-			return avs_new_value_error("parse error on timecode file");
-		}
-		ncodes++;
-	}
-	fclose(fil);
 
+	for (int i = 0; i < filenames.size(); i++) {
+
+		FILE* fil = fopen(filenames[i].c_str(), "r");
+		if (!fil)
+			return avs_new_value_error("couldn't open file for reading!");
+
+
+		if (!fgets(buff, 1024, fil) || strcmp(buff, "# timecode format v2\n"))
+		{
+			fclose(fil);
+			return avs_new_value_error("file doesn't appear to be mkvtoolnix timecodes v2");
+		}
+
+		// read in file
+		while (fgets(buff, 1024, fil))
+		{
+			if (ncodes == ncodespace)
+			{
+				ncodespace = ncodespace ? ncodespace * 2 : 1024;
+				codes = (double*)realloc(codes, ncodespace * sizeof(double));
+				if (!codes)
+				{
+					fclose(fil);
+					return avs_new_value_error("out of memory!");
+				}
+			}
+			if (sscanf(buff, "%lf", codes + ncodes) != 1)
+			{
+				free(codes);
+				fclose(fil);
+				return avs_new_value_error("parse error on timecode file");
+			}
+			ncodes++;
+		}
+		fclose(fil);
+
+	}
 
 	if (ncodes == 0)
 	{
