@@ -398,7 +398,7 @@ AVS_Value AVSC_CC tmm_create(AVS_ScriptEnvironment* env, AVS_Value args, void* u
 			return avs_new_value_error("couldn't open file for reading!"); 
 
 
-		if (!fgets(buff, 1024, fil) || strcmp(buff, "# timecode format v2\n"))
+		if (!fgets(buff, 1024, fil) || (strcmp(buff, "# timecode format v2\n") && strcmp(buff, "# timestamp format v2\n")))
 		{
 			fclose(fil);
 			return avs_new_value_error("file doesn't appear to be mkvtoolnix timecodes v2");

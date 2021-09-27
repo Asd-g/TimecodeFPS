@@ -17,3 +17,7 @@ AviSynth plugin to convert VFR to CFR using MKV timecodes
 
 ### Copyright 2012 Nicholai Main
 See timecodefps.txt for more.
+
+### Requirements
+
+- Microsoft VisualC++ Redistributable Package 2022 (can be downloaded from [here](https://github.com/abbodi1406/vcredist/releases))

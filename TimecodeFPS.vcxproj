@@ -21,6 +21,9 @@
   <ItemGroup>
     <ClCompile Include="timecodefps.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="timecodefps.rc" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

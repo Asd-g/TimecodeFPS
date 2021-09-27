@@ -1,0 +1,30 @@
+#include <winver.h>
+#include <ntdef.h>
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION             1,1,2,0
+PRODUCTVERSION        	1,1,2,0
+FILEFLAGSMASK           VS_FFI_FILEFLAGSMASK
+FILEFLAGS               0x0L
+FILEOS                  VOS__WINDOWS32
+FILETYPE                VFT_DLL
+FILESUBTYPE             VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904E4"
+        BEGIN
+        VALUE "Comments",         "Convert VFR to CFR using MKV timecodes."
+        VALUE "FileDescription",  "TimecodeFPS for AviSynth 2.6 / AviSynth+"
+        VALUE "FileVersion",      "1.1.2"
+        VALUE "InternalName",     "TimecodeFPS"
+        VALUE "OriginalFilename", "TimecodeFPS.dll"
+        VALUE "ProductName",      "TimecodeFPS"
+        VALUE "ProductVersion",   "1.1.2"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1252
+    END
+END
