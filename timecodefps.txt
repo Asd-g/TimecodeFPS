@@ -40,9 +40,10 @@ clip:
 Input clip.  Can be any avisynth supported colorspace.  Must have exactly the same number of frames as lines in timecodes.  Input FPS is discarded.  Audio, if it exists, is passed through untouched.
 
 timecodes: (default "timecodes.txt")
-Path to a matroska v2 timecodes file.  Only matroska v2 timecodes files are supported.  Specification for them: 
+Path to a matroska v2 timecodes file, or multiple matroska v2 timecode files separated by a semicolon ";" (without the quotes).  Only matroska v2 timecodes files are supported.  Specification for them: 
 http://www.bunkus.org/videotools/mkvtoolnix/doc/mkvmerge.html#mkvmerge.external_timecode_files
 Exactly one timecode is expected per frame, and it gives the start point of the frame.  (The end point of a frame is implictly the same as the start point of the next frame, except for the last frame, where a guess is made.)  The timecodes should be nonnegative and nondecreasing.  The first timecode need not be at time zero, but that will be used as the start point for the CFR stream, so a non-zero start time may cause the introduction of blank frame(s) before the first real frame.
+Specifying multiple timecode files probably only makes sense if your timestamps are absolute, like Unix timestamps in microseconds. Useful for things like timelapses. Just load the corresponding video files normally, concatenate them and then use this with the timecode filenames provided in the same order as the concatenated video files.
 
 fpsnum: (default 25)
 fpsden: (default 1)
