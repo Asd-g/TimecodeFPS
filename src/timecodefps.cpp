@@ -150,7 +150,7 @@ AVS_VideoFrame* AVSC_CC tmd_get_frame(AVS_FilterInfo* fi, int n)
     int xmax = 0;
 
     // scan forwards and backwards to add all frame boxes
-    for (unsigned i = ud->remaps[n]; i >= 0; i--)
+    for (int i = static_cast<int>(ud->remaps[n]); i >= 0; i--)
     {
         if (ud->codes[i] < leftedge)
             break;
@@ -235,13 +235,10 @@ unsigned* frameremap(unsigned* numout, const double* in, unsigned ncodes, int fp
     th1 *= cfrlen;
     th2 *= cfrlen;
 
-
     numremapspace = 1024;
     remaps = (unsigned int*)malloc(1024 * sizeof(unsigned));
     if (!remaps)
         return NULL;
-
-
 
     unsigned i;
 
@@ -444,8 +441,7 @@ AVS_Value AVSC_CC tmm_create(AVS_ScriptEnvironment* env, AVS_Value args, void* u
 
     if (starting)
     {
-        int i;
-        for (i = ncodes - 1; i < ncodes; i--)
+        for (int i = ncodes; i >= 0; i--)
             codes[i] -= codes[0];
     }
 

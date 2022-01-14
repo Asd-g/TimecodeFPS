@@ -13,6 +13,8 @@ See timecodefps.txt for more.
 - Microsoft VisualC++ Redistributable Package 2022 (can be downloaded from [here](https://github.com/abbodi1406/vcredist/releases))
 
 ### Changelog
+* v1.1.4 2022-01-14
+    - Fixed regression when start=true. (Asd-g)
 * v1.1.3 2022-01-13
     - Set duration of the latest frame when specified. (Asd-g)
 * v1.1.2 2021-09-28

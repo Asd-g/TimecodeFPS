@@ -1,8 +1,8 @@
 #include <winver.h>
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION             1,1,3,0
-PRODUCTVERSION        	1,1,3,0
+FILEVERSION             1,1,4,0
+PRODUCTVERSION        	1,1,4,0
 FILEFLAGSMASK           VS_FFI_FILEFLAGSMASK
 FILEFLAGS               0x0L
 FILEOS                  VOS__WINDOWS32
@@ -15,11 +15,11 @@ BEGIN
         BEGIN
         VALUE "Comments",         "Convert VFR to CFR using MKV timecodes."
         VALUE "FileDescription",  "TimecodeFPS for AviSynth 2.6 / AviSynth+"
-        VALUE "FileVersion",      "1.1.3"
+        VALUE "FileVersion",      "1.1.4"
         VALUE "InternalName",     "TimecodeFPS"
         VALUE "OriginalFilename", "TimecodeFPS.dll"
         VALUE "ProductName",      "TimecodeFPS"
-        VALUE "ProductVersion",   "1.1.3"
+        VALUE "ProductVersion",   "1.1.4"
         END
     END
     BLOCK "VarFileInfo"
