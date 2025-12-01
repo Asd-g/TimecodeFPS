@@ -31,6 +31,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <span>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -56,7 +59,7 @@ static std::wstring utf8_to_utf16(const std::string& str)
 #endif // !_WIN32
 
 
-#include "../include/avisynth_c.h"
+#include "avs_c_api_loader.hpp"
 
 
 // begin draw code ********************************************************************************************
@@ -74,7 +77,8 @@ void AVSC_CC tmd_free(AVS_FilterInfo* fi)
     udata_t* ud = (udata_t*)fi->user_data;
     free(ud->codes);
     free(ud->remaps);
-    free(ud);
+    delete ud;
+    fi->user_data = nullptr;
 }
 
 void putpx(int x, int y, unsigned long* dst, int dst_p, unsigned long color)
@@ -117,11 +121,11 @@ AVS_VideoFrame* AVSC_CC tmd_get_frame(AVS_FilterInfo* fi, int n)
 {
     udata_t* ud = (udata_t*)fi->user_data;
 
-    AVS_VideoFrame* ret = avs_new_video_frame(fi->env, &fi->vi);
+    avs_helpers::avs_video_frame_ptr ret_ptr{ g_avs_api->avs_new_video_frame_a(fi->env, &fi->vi, FRAME_ALIGN) };
     // 640 by 32
-
-    unsigned long* dst = (unsigned long*)avs_get_write_ptr(ret);
-    const int dst_p = avs_get_pitch(ret);
+    AVS_VideoFrame* ret = ret_ptr.get();
+    unsigned long* dst = (unsigned long*)g_avs_api->avs_get_write_ptr_p(ret, AVS_DEFAULT_PLANE);
+    const int dst_p = g_avs_api->avs_get_pitch_p(ret, AVS_DEFAULT_PLANE);
 
     memset(dst, 0, dst_p * 32);
 
@@ -207,22 +211,24 @@ AVS_VideoFrame* AVSC_CC tmm_get_frame(AVS_FilterInfo* fi, int n)
     unsigned* framemappings = (unsigned*)fi->user_data;
 
     if (framemappings[n] != (unsigned)(-1))
-        return avs_get_frame(fi->child, framemappings[n]);
+        return g_avs_api->avs_get_frame(fi->child, framemappings[n]);
 
     // return a new blank frame
-    AVS_VideoFrame* ret = avs_new_video_frame(fi->env, &fi->vi);
+    avs_helpers::avs_video_frame_ptr ret_ptr{ g_avs_api->avs_new_video_frame_a(fi->env, &fi->vi, FRAME_ALIGN) };
+    AVS_VideoFrame* ret = ret_ptr.get();
 
     if (!avs_is_yuv(&fi->vi))
     {
         // RGB: set all to 0
-        memset(avs_get_write_ptr(ret), 0, avs_get_pitch(ret) * avs_get_height(ret));
+        memset(g_avs_api->avs_get_write_ptr_p(ret, AVS_DEFAULT_PLANE), 0, g_avs_api->avs_get_pitch_p(ret, AVS_DEFAULT_PLANE)
+            * g_avs_api->avs_get_height_p(ret, AVS_DEFAULT_PLANE));
     }
     else
     { // yuv: y plane to 0, u+v planes to 128
       // don't care about limited range for Y plane, since it's still black
-        memset(avs_get_write_ptr_p(ret, AVS_PLANAR_Y), 0, avs_get_pitch_p(ret, AVS_PLANAR_Y) * avs_get_height_p(ret, AVS_PLANAR_Y));
-        memset(avs_get_write_ptr_p(ret, AVS_PLANAR_U), 128, avs_get_pitch_p(ret, AVS_PLANAR_U) * avs_get_height_p(ret, AVS_PLANAR_U));
-        memset(avs_get_write_ptr_p(ret, AVS_PLANAR_V), 128, avs_get_pitch_p(ret, AVS_PLANAR_V) * avs_get_height_p(ret, AVS_PLANAR_V));
+        memset(g_avs_api->avs_get_write_ptr_p(ret, AVS_PLANAR_Y), 0, g_avs_api->avs_get_pitch_p(ret, AVS_PLANAR_Y) * g_avs_api->avs_get_height_p(ret, AVS_PLANAR_Y));
+        memset(g_avs_api->avs_get_write_ptr_p(ret, AVS_PLANAR_U), 128, g_avs_api->avs_get_pitch_p(ret, AVS_PLANAR_U) * g_avs_api->avs_get_height_p(ret, AVS_PLANAR_U));
+        memset(g_avs_api->avs_get_write_ptr_p(ret, AVS_PLANAR_V), 128, g_avs_api->avs_get_pitch_p(ret, AVS_PLANAR_V) * g_avs_api->avs_get_height_p(ret, AVS_PLANAR_V));
     }
     return ret;
 }
@@ -351,30 +357,13 @@ unsigned* frameremap(unsigned* numout, const double* in, unsigned ncodes, int fp
 
 AVS_Value AVSC_CC tmm_create(AVS_ScriptEnvironment* env, AVS_Value args, void* unused)
 {
-    AVS_Clip* clip;
-
-    int fpsnum, fpsden;
-    const char* filename;
-    int reporting;
-    int starting;
-
-    double threshone, threshmore;
-
-    filename = avs_is_string(avs_array_elt(args, 1)) ?
-        avs_as_string(avs_array_elt(args, 1)) : "timecodes.txt";
-    fpsnum = avs_is_int(avs_array_elt(args, 2)) ?
-        avs_as_int(avs_array_elt(args, 2)) : 25;
-    fpsden = avs_is_int(avs_array_elt(args, 3)) ?
-        avs_as_int(avs_array_elt(args, 3)) : 1;
-    reporting = avs_is_bool(avs_array_elt(args, 4)) ?
-        avs_as_bool(avs_array_elt(args, 4)) : 0;
-    threshone = avs_is_float(avs_array_elt(args, 5)) ?
-        avs_as_float(avs_array_elt(args, 5)) : 0.4;
-    threshmore = avs_is_float(avs_array_elt(args, 6)) ?
-        avs_as_float(avs_array_elt(args, 6)) : 0.9;
-    starting = avs_is_bool(avs_array_elt(args, 7)) ?
-        avs_as_bool(avs_array_elt(args, 7)) : 0;
-
+    const char* filename = avs_helpers::get_opt_arg<const char*>(env, args, 1).value_or("timecodes.txt");
+    int fpsnum = avs_helpers::get_opt_arg<int>(env, args, 2).value_or(25);
+    int fpsden = avs_helpers::get_opt_arg<int>(env, args, 3).value_or(1);
+    int reporting = avs_helpers::get_opt_arg<int>(env, args, 4).value_or(0);
+    double threshone = avs_helpers::get_opt_arg<double>(env, args, 5).value_or(0.4);
+    double threshmore = avs_helpers::get_opt_arg<double>(env, args, 6).value_or(0.9);
+    int starting = avs_helpers::get_opt_arg<int>(env, args, 7).value_or(0);
 
     // Split filename if it's a semicolon separated ist
     std::stringstream ss;
@@ -452,8 +441,9 @@ AVS_Value AVSC_CC tmm_create(AVS_ScriptEnvironment* env, AVS_Value args, void* u
     }
 
 
-    clip = avs_take_clip(avs_array_elt(args, 0), env);
-    const AVS_VideoInfo* vi = avs_get_video_info(clip);
+    avs_helpers::avs_clip_ptr clip_ptr{ g_avs_api->avs_take_clip(avs_array_elt(args, 0), env) };
+    AVS_Clip* clip = clip_ptr.get();
+    const AVS_VideoInfo* vi = g_avs_api->avs_get_video_info(clip);
 
     if (ncodes != vi->num_frames && ncodes - 1 != vi->num_frames)
     {
@@ -483,29 +473,59 @@ AVS_Value AVSC_CC tmm_create(AVS_ScriptEnvironment* env, AVS_Value args, void* u
         return avs_new_value_error("some sort of processing error? (are timecodes in order?)");
     }
 
-
-
     AVS_FilterInfo* fi;
-    AVS_Clip* clipout;
-    clipout = avs_new_c_filter(env, &fi, avs_array_elt(args, 0), 1);
+    avs_helpers::avs_clip_ptr clipout_ptr{ g_avs_api->avs_new_c_filter(env, &fi, avs_array_elt(args, 0), 1) };
+    AVS_Clip* clipout = clipout_ptr.get();
     fi->vi.num_frames = numremaps;
 
     fi->vi.fps_numerator = fpsnum;
     fi->vi.fps_denominator = fpsden;
 
-
-
     if (reporting)
     {
-        udata_t* ud = (udata_t*)malloc(sizeof(*ud));
+        std::unique_ptr<udata_t> ud = std::make_unique<udata_t>();
 
-        wchar_t* buffText = new wchar_t[1024];
-        swprintf(buffText, 1024, L"FPSNUM: %i FPSDEN: %i DUPS: %i DROPS: %i AVGERR: %fms TH1 %f TH2+ %f", fpsnum, fpsden, ndup, ndrop, avgerr, threshone, threshmore);
-        MessageBox(NULL, buffText, L"TimeCodeFPS information", 0);
+        std::stringstream ss;
+        ss << "FPSNUM: " << fpsnum
+            << " FPSDEN: " << fpsden
+            << " DUPS: " << ndup
+            << " DROPS: " << ndrop
+            << " AVGERR: " << avgerr
+            << " TH1 " << threshone
+            << "  TH2+ " << threshmore;
+
+        std::string msg_utf8 = ss.str();
+        std::string title_utf8 = "TimeCodeFPS information";
+
+#ifdef _WIN32
+        auto utf8_to_wstring = [](const std::string& utf8_str) -> std::wstring 
+            {
+            if (utf8_str.empty())
+                return L"";
+            const int len = MultiByteToWideChar(CP_UTF8, 0, utf8_str.c_str(), (int)utf8_str.length(), NULL, 0);
+            std::wstring wstr(len, L'\0');
+            MultiByteToWideChar(CP_UTF8, 0, utf8_str.c_str(), (int)utf8_str.length(), &wstr[0], len);
+            return wstr;
+            };
+        
+        std::wstring wmsg = utf8_to_utf16(msg_utf8);
+        std::wstring wtitle = utf8_to_utf16(title_utf8);
+
+        MessageBox(NULL, wmsg.c_str(), wtitle.c_str(), 0);
+#else
+#ifdef __APPLE__
+        std::string script = "display dialog \"" + msg_utf8 + "\" with title \"" + title_utf8 + "\"";
+        std::string command = "osascript -e '" + script + "'";
+        system(command.c_str());
+#else
+        std::string command = "zenity --info --title=\"" + title_utf8 + "\" --text=\"" + msg_utf8 + "\"";
+        system(command.c_str());
+#endif // __APPLE__
+#endif // _WIN32        
 
         // for reporting, we make a different clip
         fi->get_frame = tmd_get_frame;
-        fi->user_data = ud;
+        fi->user_data = ud.release();
         fi->free_filter = tmd_free;
 
         fi->vi.width = 640;
@@ -526,28 +546,41 @@ AVS_Value AVSC_CC tmm_create(AVS_ScriptEnvironment* env, AVS_Value args, void* u
     }
 
 
-    AVS_Value ret = avs_new_value_clip(clipout);
-    avs_release_clip(clipout);
-
+    AVS_Value ret;
+    g_avs_api->avs_set_to_clip(&ret, clipout);
 
     return ret;
 }
 
-const char* AVSC_CC avisynth_c_plugin_init(AVS_ScriptEnvironment* env)
+const char* AVSC_CC avisynth_c_plugin_init(AVS_ScriptEnvironment* __restrict env)
 {
-    avs_add_function(env,
+    static constexpr int REQUIRED_INTERFACE_VERSION{ 9 };
+    static constexpr int REQUIRED_BUGFIX_VERSION{ 2 };
+    static constexpr std::string_view required_functions_storage[]{
+        "avs_pool_free",           // avs loader helper functions
+        "avs_release_clip",        // avs loader helper functions
+        "avs_release_value",       // avs loader helper functions
+        "avs_release_video_frame", // avs loader helper functions
+        "avs_take_clip",           // avs loader helper functions
+        "avs_add_function",
+        "avs_new_c_filter",
+        "avs_new_video_frame_a",
+        "avs_set_to_clip",
+        "avs_get_frame",
+        "avs_get_height_p",
+        "avs_get_pitch_p",
+        "avs_get_video_info",
+        "avs_get_write_ptr_p"
+    };
+    static constexpr std::span<const std::string_view> required_functions{ required_functions_storage };
+
+    if (!avisynth_c_api_loader::get_api(env, REQUIRED_INTERFACE_VERSION, REQUIRED_BUGFIX_VERSION, required_functions)) {
+        std::cerr << avisynth_c_api_loader::get_last_error() << std::endl;
+        return avisynth_c_api_loader::get_last_error();
+    }
+
+    g_avs_api->avs_add_function(env,
         "timecodefps", "c[timecodes]s[fpsnum]i[fpsden]i[report]b[threshone]f[threshmore]f[start]b",
         tmm_create, 0);
     return "Matroska v2 timecodes -> CFR";
 }
-
-
-
-
-BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
-{
-    return TRUE;
-}
-
-
-
