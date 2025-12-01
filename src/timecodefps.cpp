@@ -31,14 +31,32 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstdio>
 #include <cstdlib>
-
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <string>
 #include <sstream>
+#include <string>
 #include <vector>
 
-#include "avisynth_c.h"
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+static std::wstring utf8_to_utf16(const std::string& str)
+{
+    if (str.empty())
+        return std::wstring();
+
+    const int required_size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+    if (required_size == 0)
+        return std::wstring();
+
+    std::wstring wstr;
+    wstr.resize(required_size - 1);
+    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), &wstr[0], required_size);
+    return wstr;
+}
+#endif // !_WIN32
+
+
+#include "../include/avisynth_c.h"
 
 
 // begin draw code ********************************************************************************************
@@ -331,9 +349,6 @@ unsigned* frameremap(unsigned* numout, const double* in, unsigned ncodes, int fp
 
 }
 
-
-
-
 AVS_Value AVSC_CC tmm_create(AVS_ScriptEnvironment* env, AVS_Value args, void* unused)
 {
     AVS_Clip* clip;
@@ -388,7 +403,14 @@ AVS_Value AVSC_CC tmm_create(AVS_ScriptEnvironment* env, AVS_Value args, void* u
 
     for (size_t i = 0; i < filenames.size(); i++) {
 
-        FILE* fil = fopen(filenames[i].c_str(), "r");
+        FILE* fil = nullptr;
+#ifdef _WIN32
+        std::wstring w_filename = utf8_to_utf16(filenames[i]);
+        fil = _wfopen(w_filename.c_str(), L"r");
+#else
+        fil = fopen(filenames[i].c_str(), "r");
+#endif // _WIN32
+
         if (!fil)
             return avs_new_value_error("couldn't open file for reading!");
 
