@@ -30,3 +30,30 @@ See timecodefps.txt for more.
     - Add "start" parameter
 * 2012-04-16
     - Initial release
+
+### Building:
+
+#### Prerequisites
+- **Git**
+- **CMake** >= 3.25
+- A **C++20 capable compiler** (e.g., Visual Studio 2022, GCC 11+, Clang 12+)
+
+1.  Clone the repository:
+
+    ```
+    git clone --depth 1 --shallow-submodules --recursive https://github.com/Asd-g/TimecodeFPS
+    cd TimecodeFPS
+    ```
+
+2.  Configure and build the project:
+
+    ```
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build -j$(nproc)
+    ```
+
+3.  (Linux) Install the plugin (optional):
+
+    ```
+    sudo cmake --install build
+    ```
