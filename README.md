@@ -13,6 +13,9 @@ See timecodefps.txt for more.
 - Microsoft VisualC++ Redistributable Package 2022 (can be downloaded from [here](https://github.com/abbodi1406/vcredist/releases))
 
 ### Changelog
+* v1.1.6 2026-02-05
+    - Fix dangling pointer (Asd-g)
+    Regression from 1.1.5.
 * v1.1.5 2025-12-01
     - Windows: convert filenames to UTF-16 (Asd-g)
     - Add support for Linux and macOS. (Asd-g)
