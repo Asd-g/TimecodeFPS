@@ -524,10 +524,6 @@ AVS_Value AVSC_CC tmm_create(AVS_ScriptEnvironment* env, AVS_Value args, void* u
 #endif // _WIN32        
 
         // for reporting, we make a different clip
-        fi->get_frame = tmd_get_frame;
-        fi->user_data = ud.release();
-        fi->free_filter = tmd_free;
-
         fi->vi.width = 640;
         fi->vi.height = 32;
         fi->vi.pixel_type = AVS_CS_BGR32;
@@ -536,6 +532,9 @@ AVS_Value AVSC_CC tmm_create(AVS_ScriptEnvironment* env, AVS_Value args, void* u
         ud->codes = codes;
         ud->remaps = remaps;
 
+        fi->get_frame = tmd_get_frame;
+        fi->user_data = ud.release();
+        fi->free_filter = tmd_free;
     }
     else
     {
